@@ -1,8 +1,12 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  base: '/NotTetris/',
-})
+export default defineConfig(({ command }) => {
+  const base = command === "build" ? "/NotTetris/" : "/";
+
+  return {
+    plugins: [react()],
+    base,
+  };
+});
