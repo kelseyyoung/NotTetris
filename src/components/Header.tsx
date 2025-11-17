@@ -22,16 +22,16 @@ export const Header = () => {
         }}
       >
         {/* Centered logo */}
-        <Box
-          component="img"
-          src="/logo.png"
-          alt="Logo"
-          sx={{
-            height: 80,
-            // maxWidth: "200px",
-            objectFit: "contain",
-          }}
-        />
+      <Box
+        component="img"
+        src={`${import.meta.env.BASE_URL}logo.png`}
+        alt="Logo"
+        sx={{
+          height: 80,
+          // maxWidth: "200px",
+          objectFit: "contain",
+        }}
+      />
 
         {/* Help button in top right */}
         <IconButton

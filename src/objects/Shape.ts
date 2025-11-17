@@ -4,7 +4,7 @@ import { Tile } from "./Tile";
 let rankings: string = "";
 async function loadRankings(): Promise<void> {
   if (!rankings) {
-    const response = await fetch("/RankingWithEntireSquare.txt");
+    const response = await fetch(`${import.meta.env.BASE_URL}RankingWithEntireSquare.txt`);
     rankings = await response.text();
   }
 }
