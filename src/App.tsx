@@ -28,6 +28,8 @@ import { ArrowButton } from "./components/ArrowButton";
 import { Header } from "./components/Header";
 import IconButton from "@mui/material/IconButton";
 
+const MAX_PUZZLE_NUMBER = 62642;
+
 const tooltipOffset = {
   popper: {
     modifiers: [
@@ -74,6 +76,12 @@ const tooltipOffset = {
 // function tileInBounds(x: number, y: number) {
 //   return x >= 0 && x < 8 && y >= 0 && y < 8;
 // }
+
+function isPuzzleNumberInvalid(puzzleNumber: string): boolean {
+  if (puzzleNumber === "") return false;
+  const num = Number(puzzleNumber);
+  return isNaN(num) || num < 1 || num > MAX_PUZZLE_NUMBER;
+}
 
 function App() {
   const grid = useRef<Grid>(new Grid());
@@ -124,7 +132,7 @@ function App() {
       // If puzzleNumber is provided and valid, use it; otherwise use difficulty
       const puzzleNum = parseInt(puzzleNumber);
       if (puzzleNumber && !isNaN(puzzleNum)) {
-        if (puzzleNum < 1 || puzzleNum > 62642) {
+        if (puzzleNum < 1 || puzzleNum > MAX_PUZZLE_NUMBER) {
           setIsLoading(false);
           return;
         }
@@ -603,12 +611,7 @@ function App() {
                   type="number"
                   autoComplete="off"
                   disabled={isLoading}
-                  error={
-                    puzzleNumber !== "" &&
-                    (isNaN(Number(puzzleNumber)) ||
-                      Number(puzzleNumber) < 1 ||
-                      Number(puzzleNumber) > 62462)
-                  }
+                  error={isPuzzleNumberInvalid(puzzleNumber)}
                   sx={{
                     "& .MuiInputBase-input::placeholder": {
                       opacity: 0.6,
@@ -674,13 +677,7 @@ function App() {
                 variant="contained"
                 size={buttonSize}
                 fullWidth
-                disabled={
-                  isLoading ||
-                  (puzzleNumber !== "" &&
-                    (isNaN(Number(puzzleNumber)) ||
-                      Number(puzzleNumber) < 1 ||
-                      Number(puzzleNumber) > 62462))
-                }
+                disabled={isLoading || isPuzzleNumberInvalid(puzzleNumber)}
                 sx={{
                   boxShadow: "none",
                   "&:hover": {
@@ -694,22 +691,19 @@ function App() {
                   "Start"
                 )}
               </Button>
-              {puzzleNumber !== "" &&
-                (isNaN(Number(puzzleNumber)) ||
-                  Number(puzzleNumber) < 1 ||
-                  Number(puzzleNumber) > 62642) && (
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: "error.main",
-                      mt: 0.5,
-                      display: "block",
-                      textAlign: "center",
-                    }}
-                  >
-                    Puzzle # must be between 1 and 62642
-                  </Typography>
-                )}
+              {isPuzzleNumberInvalid(puzzleNumber) && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "error.main",
+                    mt: 0.5,
+                    display: "block",
+                    textAlign: "center",
+                  }}
+                >
+                  Puzzle # must be between 1 and {MAX_PUZZLE_NUMBER}
+                </Typography>
+              )}
             </Box>
           </CenteredColumnStack>
         )}
