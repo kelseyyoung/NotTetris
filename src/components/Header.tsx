@@ -1,11 +1,17 @@
 import { useState } from "react";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
+import Button from "@mui/material/Button";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import Backdrop from "@mui/material/Backdrop";
 import { HelpModal } from "./HelpModal";
 
-export const Header = () => {
+interface HeaderProps {
+  onAutoComplete: () => void;
+  gameStarted: boolean;
+}
+
+export const Header = ({ onAutoComplete, gameStarted }: HeaderProps) => {
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
 
   return (
@@ -17,35 +23,55 @@ export const Header = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "16px 32px" /* Padding on top/bottom and left/right */,
+          padding: "4px 16px" /* Reduced padding for compact header */,
+          paddingTop: "8px",
           boxSizing: "border-box",
         }}
       >
+        {/* Auto button in top left - only show when game is started */}
+        {gameStarted && (
+          <Button
+            onClick={onAutoComplete}
+            variant="outlined"
+            size="small"
+            sx={{
+              position: "absolute",
+              left: 8,
+              top: "50%",
+              transform: "translateY(-50%)",
+              minWidth: "auto",
+              px: 1.5,
+            }}
+            aria-label="autocomplete"
+          >
+            Auto
+          </Button>
+        )}
+
         {/* Centered logo */}
-      <Box
-        component="img"
-        src={`${import.meta.env.BASE_URL}logo.png`}
-        alt="Logo"
-        sx={{
-          height: 80,
-          // maxWidth: "200px",
-          objectFit: "contain",
-        }}
-      />
+        <Box
+          component="img"
+          src={`${import.meta.env.BASE_URL}logo.png`}
+          alt="Logo"
+          sx={{
+            height: { xs: 40, sm: 50 }, // Smaller logo on mobile, larger on desktop
+            objectFit: "contain",
+          }}
+        />
 
         {/* Help button in top right */}
         <IconButton
           onClick={() => setShowHelpModal(true)}
           sx={{
             position: "absolute",
-            right: 48,
+            right: 8,
             top: "50%",
             transform: "translateY(-50%)",
           }}
           aria-label="help"
-          size="medium"
+          size="small"
         >
-          <HelpOutlineIcon fontSize="medium" />
+          <HelpOutlineIcon fontSize="small" />
         </IconButton>
       </Box>
 

@@ -4,7 +4,9 @@ import { Tile } from "./Tile";
 let rankings: string = "";
 async function loadRankings(): Promise<void> {
   if (!rankings) {
-    const response = await fetch(`${import.meta.env.BASE_URL}RankingWithEntireSquare.txt`);
+    const response = await fetch(
+      `${import.meta.env.BASE_URL}RankingWithEntireSquare.txt`
+    );
     rankings = await response.text();
   }
 }
@@ -70,7 +72,7 @@ export class Shape {
 
   static async generateShapesFromRanking(
     ranking: "easy" | "medium" | "hard"
-  ): Promise<Shape[]> {
+  ): Promise<{ shapes: Shape[]; puzzleIndex: number }> {
     // Read the Ranking.txt file
     await loadRankings();
 
@@ -78,26 +80,32 @@ export class Shape {
     // If medium, find a random line that ends with 6-10
     // If hard, find a random line that ends with less than 6
     const lines = rankings.trim().split("\n");
-    const filteredLines = lines.filter((line) => {
-      const parts = line.trim().split(" ");
-      const score = parseInt(parts[parts.length - 1]);
-      if (ranking === "easy") {
-        return score >= 12;
-      } else if (ranking === "medium") {
-        return score >= 6 && score < 12;
-      } else if (ranking === "hard") {
-        return score < 6;
-      }
-    });
+    const filteredLinesWithIndex = lines
+      .map((line, index) => ({ line, originalIndex: index }))
+      .filter(({ line }) => {
+        const parts = line.trim().split(" ");
+        const score = parseInt(parts[parts.length - 1]);
+        if (ranking === "easy") {
+          return score >= 12;
+        } else if (ranking === "medium") {
+          return score >= 6 && score < 12;
+        } else if (ranking === "hard") {
+          return score < 6;
+        }
+      });
 
-    if (filteredLines.length === 0) {
+    if (filteredLinesWithIndex.length === 0) {
       throw new Error(`No shapes found for ranking: ${ranking}`);
     }
 
     // Now that the lines are filtered, create positions from the first 8 numbers
     // The first 8 numbers represent indexes of a 2D grid (0-63)
-    const randomIndex = Math.floor(Math.random() * filteredLines.length);
-    const selectedLine = filteredLines[randomIndex];
+    const randomIndex = Math.floor(
+      Math.random() * filteredLinesWithIndex.length
+    );
+    const selectedEntry = filteredLinesWithIndex[randomIndex];
+    const selectedLine = selectedEntry.line;
+    const puzzleIndex = selectedEntry.originalIndex + 1; // 1-based index
     const parts = selectedLine.trim().split(" ");
     // The selected line will have 64 numbers, 8 shapes of 8 numbers each
     // Create all 8 shapes and put them in an array
@@ -117,7 +125,7 @@ export class Shape {
       }
       shapes.push(new Shape(positions, shuffledColors[i]));
     }
-    return shapes;
+    return { shapes, puzzleIndex };
   }
 
   static duplicate(s: Shape): Shape {

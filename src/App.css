@@ -1,14 +1,16 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: #ccc;
+  font-family: "American Typewriter", "Courier New", monospace;
+  overflow: hidden; /* Prevent scrolling */
 }
 
 #root {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 100vh;
+  height: 100vh; /* Use full viewport height */
+  overflow: hidden; /* Prevent scrolling */
 }
 
 .controls-container {
@@ -16,10 +18,16 @@ body {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  margin: 0 16px;
-  min-width: 380px;
+  padding: 0 20px;
+  width: 100%;
+  margin-top: 8px; /* Reduced spacing between grid and controls */
 }
 
 .rotate-left {
   transform: scaleX(-1);
+}
+
+/* Ensure all text uses normal casing */
+* {
+  text-transform: none !important;
 }

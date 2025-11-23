@@ -13,10 +13,11 @@ import SwapVertIcon from "@mui/icons-material/SwapVert";
 import MenuItem from "@mui/material/MenuItem";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import Tooltip from "@mui/material/Tooltip";
-import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import CloseIcon from "@mui/icons-material/Close";
 import Typography from "@mui/material/Typography";
+import Slide from "@mui/material/Slide";
+import CircularProgress from "@mui/material/CircularProgress";
 import {
   CenteredColumnStack,
   CenteredRowStack,
@@ -78,6 +79,7 @@ function App() {
   //   false
   // );
   const [gameStarted, setGameStarted] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">(
     "easy"
   );
@@ -86,34 +88,61 @@ function App() {
   const [hasWon, setHasWon] = useState<boolean>(false);
   const [showSolutionModal, setShowSolutionModal] = useState<boolean>(false);
   const [isLastShape, setIsLastShape] = useState<boolean>(false);
-  const [numMoves, setNumMoves] = useState<number>(0);
+  const [showWinModal, setShowWinModal] = useState<boolean>(false);
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
+  const [dynamicTileSize, setDynamicTileSize] = useState<number>(TILE_SIZE);
+  const [dynamicPadding, setDynamicPadding] = useState<number>(GRID_PADDING);
+  const [gridSize, setGridSize] = useState<number>(0); // Track actual grid size
+  const [isTallPortrait, setIsTallPortrait] = useState<boolean>(false); // Track tall portrait mode
+  const [buttonSize, setButtonSize] = useState<"small" | "medium" | "large">(
+    "medium"
+  );
+  const [controlSpacing, setControlSpacing] = useState<{
+    inner: number;
+    outer: number;
+  }>({ inner: 1, outer: 3 });
 
-  const redraw = (grid: React.RefObject<Grid>) => {
-    const canvas = document.getElementById("canvas-grid") as HTMLCanvasElement;
-    grid.current.draw(canvas);
-    setCanGoToNextShape(!grid.current.hasOverlappingShapes());
-    setCanUndo(grid.current.getShapes().length > 1);
-    setIsLastShape(grid.current.getShapes().length === 8);
-  };
+  const redraw = useCallback(
+    (grid: React.RefObject<Grid>) => {
+      const canvas = document.getElementById(
+        "canvas-grid"
+      ) as HTMLCanvasElement;
+      grid.current.draw(canvas, dynamicTileSize, dynamicPadding);
+      setCanGoToNextShape(!grid.current.hasOverlappingShapes());
+      setCanUndo(grid.current.getShapes().length > 1);
+      setIsLastShape(grid.current.getShapes().length === 8);
+    },
+    [dynamicTileSize, dynamicPadding]
+  );
 
   const startGame = async () => {
-    setGameStarted(true);
-    await grid.current.startGame(difficulty);
-    redraw(grid);
+    setIsLoading(true);
+    try {
+      await grid.current.startGame(difficulty);
+      setGameStarted(true);
+      redraw(grid);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const rotateActiveShape = useCallback((clockwise: boolean) => {
-    grid.current.rotateActiveShape(clockwise);
-    redraw(grid);
-  }, []);
+  const rotateActiveShape = useCallback(
+    (clockwise: boolean) => {
+      grid.current.rotateActiveShape(clockwise);
+      redraw(grid);
+    },
+    [redraw]
+  );
 
-  const flipActiveShape = useCallback((horizontal: boolean) => {
-    grid.current.flipActiveShape(horizontal);
-    redraw(grid);
-  }, []);
+  const flipActiveShape = useCallback(
+    (horizontal: boolean) => {
+      grid.current.flipActiveShape(horizontal);
+      redraw(grid);
+    },
+    [redraw]
+  );
 
   const nextShape = useCallback(() => {
-    setNumMoves(numMoves + 1);
     if (grid.current.hasWon()) {
       setHasWon(true);
       redraw(grid);
@@ -121,14 +150,18 @@ function App() {
     }
     if (!grid.current.hasOverlappingShapes()) {
       grid.current.addShape();
-      redraw(grid);
     }
-  }, [numMoves]);
-
-  const moveActiveShape = useCallback((direction: MoveShapeDirection) => {
-    grid.current.moveActiveShape(direction);
+    // Always redraw to re-evaluate button states after attempting to add shape
     redraw(grid);
-  }, []);
+  }, [redraw]);
+
+  const moveActiveShape = useCallback(
+    (direction: MoveShapeDirection) => {
+      grid.current.moveActiveShape(direction);
+      redraw(grid);
+    },
+    [redraw]
+  );
 
   const handleDifficultyChange = (event: SelectChangeEvent) => {
     setDifficulty(event.target.value as "easy" | "medium" | "hard");
@@ -147,22 +180,29 @@ function App() {
     setShowSolutionModal(false);
   };
 
-  // const autoComplete = () => {
-  //   grid.current.autoComplete();
-  //   setHasWon(true);
-  //   redraw(grid);
-  // };
+  const autoComplete = () => {
+    grid.current.autoComplete();
+    setHasWon(true);
+    redraw(grid);
+  };
 
   const restartGame = () => {
     setGameStarted(false);
     setHasWon(false);
-    setNumMoves(0);
+    setElapsedTime(0);
     setCanGoToNextShape(true);
     setCanUndo(false);
     setIsLastShape(false);
     setShowSolutionModal(false);
+    setShowWinModal(false);
     grid.current = new Grid();
     redraw(grid);
+  };
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const renderSolutionTable = (useActualShapes: boolean = false) => {
@@ -211,9 +251,128 @@ function App() {
   };
 
   useEffect(() => {
+    // Calculate responsive tile size based on viewport
+    const calculateTileSize = () => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const MIN_SIDE_PADDING = 16; // Minimum 16px on each side
+
+      // Estimate heights of UI elements more accurately
+      // Header: logo + padding (40-50px logo + 8px padding)
+      const HEADER_HEIGHT = viewportWidth < 600 ? 48 : 58;
+
+      // Always use the max controls height (when game is running) so grid doesn't resize
+      // Smaller screens have larger buttons, so controls take up more space
+      // Started: ~260px on desktop, ~320px on mobile (larger buttons + more spacing)
+      const CONTROLS_HEIGHT_ESTIMATE = viewportWidth < 480 ? 320 : 260;
+
+      // Spacing: gap between grid and controls + bottom padding
+      const VERTICAL_SPACING = 16;
+
+      // Available height for the grid
+      const availableHeight =
+        viewportHeight -
+        HEADER_HEIGHT -
+        CONTROLS_HEIGHT_ESTIMATE -
+        VERTICAL_SPACING;
+
+      // Available width for the grid (viewport - side padding on both sides)
+      const availableWidth = viewportWidth - MIN_SIDE_PADDING * 2;
+
+      // Size based on smallest viewport dimension, capped at 50% of larger dimension
+      // This ensures grid is as large as possible while maintaining aspect ratio
+      const isLandscape = viewportWidth > viewportHeight;
+
+      let targetGridSize;
+      if (isLandscape) {
+        // In landscape: size based on height (smaller), cap at 50% of width
+        targetGridSize = Math.min(availableHeight, viewportWidth * 0.5);
+      } else {
+        // In portrait: size based on width (smaller), cap at 50% of height
+        targetGridSize = Math.min(availableWidth, viewportHeight * 0.5);
+      }
+
+      // Calculate tile size (8 tiles + 2 * padding)
+      const calculatedTileSize = (targetGridSize - GRID_PADDING * 2) / 8;
+
+      // Calculate proportional padding
+      const scale = calculatedTileSize / TILE_SIZE;
+      const finalPadding = GRID_PADDING * scale;
+
+      // Store the actual grid size for controls to match
+      const actualGridSize = calculatedTileSize * 8 + finalPadding * 2;
+
+      setDynamicTileSize(calculatedTileSize);
+      setDynamicPadding(finalPadding);
+      setGridSize(actualGridSize);
+      // Only stack buttons vertically in portrait mode with tall enough viewport
+      setIsTallPortrait(!isLandscape && viewportHeight >= 800);
+
+      // Set button size and spacing based on viewport WIDTH
+      // Smaller screens get LARGER buttons and MORE spacing for better touch targets
+      if (viewportWidth < 480) {
+        setButtonSize("large");
+        setControlSpacing({ inner: 1.5, outer: 4 });
+      } else if (viewportWidth < 768) {
+        setButtonSize("medium");
+        setControlSpacing({ inner: 1, outer: 3 });
+      } else {
+        setButtonSize("medium");
+        setControlSpacing({ inner: 1, outer: 3 });
+      }
+    };
+
+    calculateTileSize();
+
+    // Add resize listener
+    window.addEventListener("resize", calculateTileSize);
+    return () => window.removeEventListener("resize", calculateTileSize);
+  }, []); // Empty dependency array - only run on mount and resize
+
+  useEffect(() => {
+    // Set up canvas for high DPI displays
+    const canvas = document.getElementById("canvas-grid") as HTMLCanvasElement;
+    if (!canvas) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const displayWidth = dynamicTileSize * 8 + dynamicPadding * 2;
+    const displayHeight = dynamicTileSize * 8 + dynamicPadding * 2;
+
+    // Set the actual canvas size in memory (scaled for DPI)
+    canvas.width = displayWidth * dpr;
+    canvas.height = displayHeight * dpr;
+
+    // Set the display size (CSS pixels)
+    canvas.style.width = displayWidth + "px";
+    canvas.style.height = displayHeight + "px";
+
+    // Scale all drawing operations by the dpr
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.scale(dpr, dpr);
+    }
+
+    // Redraw when size changes
+    if (grid.current) {
+      redraw(grid);
+    }
+  }, [dynamicTileSize, dynamicPadding, redraw]);
+
+  useEffect(() => {
     // Initial draw
     redraw(grid);
-  }, []);
+  }, [redraw]);
+
+  useEffect(() => {
+    // Timer effect - increments every second while game is running
+    if (!gameStarted || hasWon) return;
+
+    const intervalId = setInterval(() => {
+      setElapsedTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [gameStarted, hasWon]);
 
   useEffect(() => {
     if (!hasWon || !grid.current) return;
@@ -233,18 +392,24 @@ function App() {
 
     const timeoutId = setTimeout(() => {
       // Draw initial kaleidoscope
-      gridInstance.drawKaleidoscope(canvas);
+      gridInstance.drawKaleidoscope(canvas, dynamicTileSize, dynamicPadding);
       kaleidoscopeCount++;
 
       // Set up interval to redraw kaleidoscope every 1 second
       intervalId = window.setInterval(() => {
         if (kaleidoscopeCount < maxKaleidoscopeIterations) {
-          gridInstance.drawKaleidoscope(canvas);
+          gridInstance.drawKaleidoscope(
+            canvas,
+            dynamicTileSize,
+            dynamicPadding
+          );
           kaleidoscopeCount++;
         } else {
           // Stop the kaleidoscope and redraw the original grid
           if (intervalId !== null) clearInterval(intervalId);
-          gridInstance.draw(canvas);
+          gridInstance.draw(canvas, dynamicTileSize, dynamicPadding);
+          // Show the win modal after kaleidoscope completes
+          setTimeout(() => setShowWinModal(true), 300);
         }
       }, 500);
     }, 500);
@@ -254,7 +419,7 @@ function App() {
       clearTimeout(timeoutId);
       if (intervalId !== null) clearInterval(intervalId);
     };
-  }, [hasWon]);
+  }, [hasWon, dynamicTileSize, dynamicPadding, redraw]);
 
   // useEffect(() => {
   //   if (!grid.current) return;
@@ -321,6 +486,25 @@ function App() {
 
     const keyDownHandler = (event: KeyboardEvent) => {
       if (!gameStarted || hasWon) return;
+
+      // Only handle game control keys
+      const gameKeys = [
+        "r",
+        "e",
+        "f",
+        "v",
+        "n",
+        "w",
+        "s",
+        "a",
+        "d",
+        "ArrowUp",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+      ];
+      if (!gameKeys.includes(event.key)) return;
+
       event.preventDefault();
 
       switch (event.key) {
@@ -373,35 +557,50 @@ function App() {
 
   return (
     <>
-      <Header />
-      <canvas
-        id="canvas-grid"
-        // +1 for the lines
-        width={TILE_SIZE * 8 + GRID_PADDING * 2}
-        height={TILE_SIZE * 8 + GRID_PADDING * 2}
-      ></canvas>
-      <div className="controls-container">
+      <Header onAutoComplete={autoComplete} gameStarted={gameStarted} />
+      <Box sx={{ position: "relative", display: "inline-block" }}>
+        <canvas id="canvas-grid"></canvas>
+      </Box>
+      <div
+        className="controls-container"
+        style={{
+          maxWidth: gridSize > 0 ? `${gridSize}px` : "420px",
+          minWidth: "320px",
+        }}
+      >
         {!gameStarted && !hasWon && (
           <CenteredRowStack spacing={2} width="100%">
-            <Box sx={{ flex: 3 }}>
+            <Box sx={{ flexGrow: 1 }}>
               <Button
                 onClick={() => {
                   void startGame();
                 }}
                 color="primary"
                 variant="contained"
-                size="large"
+                size={buttonSize}
                 fullWidth
+                disabled={isLoading}
+                sx={{
+                  boxShadow: "none",
+                  "&:hover": {
+                    boxShadow: "none",
+                  },
+                }}
               >
-                Play
+                {isLoading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Start"
+                )}
               </Button>
             </Box>
-            <Box sx={{ flex: 1 }}>
+            <Box sx={{ width: "120px", flexShrink: 0 }}>
               <Select
                 value={difficulty}
                 onChange={handleDifficultyChange}
                 size="small"
                 fullWidth
+                disabled={isLoading}
               >
                 <MenuItem value={"easy"}>Easy</MenuItem>
                 <MenuItem value={"medium"}>Medium</MenuItem>
@@ -412,134 +611,274 @@ function App() {
         )}
         {gameStarted && !hasWon && (
           <CenteredColumnStack>
+            {/* Puzzle number and timer row */}
+            <CenteredRowStack spacing={2} width="100%" sx={{ mb: 0.5 }}>
+              <Box
+                sx={{
+                  flex: 1,
+                  textAlign: "left",
+                  fontFamily: '"American Typewriter", "Courier New", monospace',
+                  fontSize: { xs: "0.95rem", sm: "1.05rem" },
+                  fontWeight: 600,
+                }}
+              >
+                Puzzle #{grid.current.getPuzzleIndex()}
+              </Box>
+              <Box
+                sx={{
+                  flex: 1,
+                  textAlign: "right",
+                  fontFamily: '"American Typewriter", "Courier New", monospace',
+                  fontSize: { xs: "0.95rem", sm: "1.05rem" },
+                  fontWeight: 600,
+                }}
+              >
+                {formatTime(elapsedTime)}
+              </Box>
+            </CenteredRowStack>
             <CenteredRowStack>
               <Button
                 color="primary"
                 variant="contained"
                 onClick={nextShape}
                 disabled={!canGoToNextShape}
-                sx={{ flexGrow: 3 }}
+                size={buttonSize}
+                sx={{
+                  flexGrow: 3,
+                  boxShadow: "none",
+                  "&:hover": {
+                    boxShadow: "none",
+                  },
+                }}
               >
-                {isLastShape ? "Finish" : "Next Shape"}
+                {isLastShape ? "Finish" : "Next shape"}
               </Button>
               <Button
                 onClick={undo}
                 variant="outlined"
                 disabled={!canUndo}
-                sx={{ flexGrow: 1 }}
-                // startIcon={
-                //   <UndoIcon color={canUndo ? "primary" : "disabled"} />
-                // }
+                size={buttonSize}
+                sx={{
+                  flexGrow: 1,
+                }}
               >
                 Undo
               </Button>
             </CenteredRowStack>
-            <CenteredRowStack width="70%">
-              {/* Left directional controls */}
-              <CenteredColumnStack spacing={0.5} sx={{ flexGrow: 1 }}>
-                {/* Up */}
-                <CenteredRowStack spacing={0.5}>
-                  <ArrowButton
-                    direction="up"
-                    onClick={() => moveActiveShape("up")}
-                  />
-                </CenteredRowStack>
-                {/* Left/Right */}
-                <CenteredRowStack spacing={0.5}>
-                  <ArrowButton
-                    direction="left"
-                    onClick={() => moveActiveShape("left")}
-                  />
-                  <ArrowButton
-                    direction="right"
-                    onClick={() => moveActiveShape("right")}
-                  />
-                </CenteredRowStack>
-                {/* Down */}
-                <CenteredRowStack spacing={0.5}>
-                  <ArrowButton
-                    direction="down"
-                    onClick={() => moveActiveShape("down")}
-                  />
-                </CenteredRowStack>
-              </CenteredColumnStack>
-              {/* Right directional controls */}
-              <CenteredColumnStack spacing={1} sx={{ flexGrow: 1 }}>
-                <CenteredRowStack spacing={1}>
-                  {/* Rotate controls */}
-                  <Tooltip
-                    title="Rotate left"
-                    placement="top"
-                    slotProps={tooltipOffset}
-                  >
-                    <Button
-                      variant="outlined"
-                      onClick={() => rotateActiveShape(false)}
-                    >
-                      <Rotate90DegreesCwIcon
-                        color="primary"
-                        className={"rotate-left"}
+            {/* Directional and transform controls - stack vertically in portrait, horizontally in landscape */}
+            {isTallPortrait ? (
+              // Portrait mode: Stack vertically (arrow buttons on top, rotate/flip below)
+              <CenteredColumnStack width="100%" spacing={controlSpacing.outer}>
+                {/* Arrow buttons */}
+                <CenteredColumnStack spacing={controlSpacing.inner}>
+                  {/* Up */}
+                  <CenteredRowStack spacing={controlSpacing.inner}>
+                    <Box>
+                      <ArrowButton
+                        direction="up"
+                        onClick={() => moveActiveShape("up")}
+                        size={buttonSize}
                       />
-                    </Button>
-                  </Tooltip>
-                  <Tooltip
-                    title="Rotate right"
-                    placement="top"
-                    slotProps={tooltipOffset}
-                  >
-                    <Button
-                      variant="outlined"
-                      onClick={() => rotateActiveShape(true)}
+                    </Box>
+                  </CenteredRowStack>
+                  {/* Left/Right */}
+                  <CenteredRowStack spacing={controlSpacing.inner}>
+                    <Box>
+                      <ArrowButton
+                        direction="left"
+                        onClick={() => moveActiveShape("left")}
+                        size={buttonSize}
+                      />
+                    </Box>
+                    <Box>
+                      <ArrowButton
+                        direction="right"
+                        onClick={() => moveActiveShape("right")}
+                        size={buttonSize}
+                      />
+                    </Box>
+                  </CenteredRowStack>
+                  {/* Down */}
+                  <CenteredRowStack spacing={controlSpacing.inner}>
+                    <Box>
+                      <ArrowButton
+                        direction="down"
+                        onClick={() => moveActiveShape("down")}
+                        size={buttonSize}
+                      />
+                    </Box>
+                  </CenteredRowStack>
+                </CenteredColumnStack>
+                {/* Rotate and Flip buttons */}
+                <CenteredColumnStack spacing={controlSpacing.inner}>
+                  <CenteredRowStack spacing={controlSpacing.inner}>
+                    {/* Rotate controls */}
+                    <Tooltip
+                      title="Rotate left"
+                      placement="top"
+                      slotProps={tooltipOffset}
                     >
-                      <Rotate90DegreesCwIcon color="primary" />
-                    </Button>
-                  </Tooltip>
-                </CenteredRowStack>
-                <CenteredRowStack spacing={1}>
-                  {/* Flip controls */}
-                  <Tooltip
-                    title="Flip horizontal"
-                    placement="bottom"
-                    slotProps={tooltipOffset}
-                  >
-                    <Button
-                      variant="outlined"
-                      onClick={() => flipActiveShape(true)}
+                      <Button
+                        variant="outlined"
+                        onClick={() => rotateActiveShape(false)}
+                        size={buttonSize}
+                        sx={{ minWidth: "80px" }}
+                      >
+                        <Rotate90DegreesCwIcon className={"rotate-left"} />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip
+                      title="Rotate right"
+                      placement="top"
+                      slotProps={tooltipOffset}
                     >
-                      <SwapHorizIcon color="primary" />
-                    </Button>
-                  </Tooltip>
-                  <Tooltip
-                    title="Flip vertical"
-                    placement="bottom"
-                    slotProps={tooltipOffset}
-                  >
-                    <Button
-                      variant="outlined"
-                      onClick={() => flipActiveShape(false)}
+                      <Button
+                        variant="outlined"
+                        onClick={() => rotateActiveShape(true)}
+                        size={buttonSize}
+                        sx={{ minWidth: "80px" }}
+                      >
+                        <Rotate90DegreesCwIcon />
+                      </Button>
+                    </Tooltip>
+                  </CenteredRowStack>
+                  <CenteredRowStack spacing={controlSpacing.inner}>
+                    {/* Flip controls */}
+                    <Tooltip
+                      title="Flip horizontal"
+                      placement="bottom"
+                      slotProps={tooltipOffset}
                     >
-                      <SwapVertIcon color="primary" />
-                    </Button>
-                  </Tooltip>
-                </CenteredRowStack>
+                      <Button
+                        variant="outlined"
+                        onClick={() => flipActiveShape(true)}
+                        size={buttonSize}
+                        sx={{ minWidth: "80px" }}
+                      >
+                        <SwapHorizIcon />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip
+                      title="Flip vertical"
+                      placement="bottom"
+                      slotProps={tooltipOffset}
+                    >
+                      <Button
+                        variant="outlined"
+                        onClick={() => flipActiveShape(false)}
+                        size={buttonSize}
+                        sx={{ minWidth: "80px" }}
+                      >
+                        <SwapVertIcon />
+                      </Button>
+                    </Tooltip>
+                  </CenteredRowStack>
+                </CenteredColumnStack>
               </CenteredColumnStack>
-            </CenteredRowStack>
-            {/* <Button onClick={showSolution}>Show Solution</Button>
-            <Button onClick={autoComplete}>Auto complete</Button> */}
-          </CenteredColumnStack>
-        )}
-        {hasWon && (
-          <CenteredColumnStack spacing={2}>
-            <Alert severity="success">
-              Congratulations, you won in {numMoves} moves!
-            </Alert>
-            <Button color="primary" variant="contained" onClick={restartGame}>
-              Play again
-            </Button>
-            {/* <Box sx={{ mt: 2, textAlign: "center" }}>
-              <h2>Solution</h2>
-              {renderSolutionTable(true)}
-            </Box> */}
+            ) : (
+              // Landscape mode: Side-by-side (original layout)
+              <CenteredRowStack width="70%" spacing={controlSpacing.outer}>
+                {/* Left directional controls */}
+                <CenteredColumnStack
+                  spacing={controlSpacing.inner}
+                  sx={{ flexGrow: 1 }}
+                >
+                  {/* Up */}
+                  <CenteredRowStack spacing={controlSpacing.inner}>
+                    <ArrowButton
+                      direction="up"
+                      onClick={() => moveActiveShape("up")}
+                      size={buttonSize}
+                    />
+                  </CenteredRowStack>
+                  {/* Left/Right */}
+                  <CenteredRowStack spacing={controlSpacing.inner}>
+                    <ArrowButton
+                      direction="left"
+                      onClick={() => moveActiveShape("left")}
+                      size={buttonSize}
+                    />
+                    <ArrowButton
+                      direction="right"
+                      onClick={() => moveActiveShape("right")}
+                      size={buttonSize}
+                    />
+                  </CenteredRowStack>
+                  {/* Down */}
+                  <CenteredRowStack spacing={controlSpacing.inner}>
+                    <ArrowButton
+                      direction="down"
+                      onClick={() => moveActiveShape("down")}
+                      size={buttonSize}
+                    />
+                  </CenteredRowStack>
+                </CenteredColumnStack>
+                {/* Right directional controls */}
+                <CenteredColumnStack
+                  spacing={controlSpacing.inner}
+                  sx={{ flexGrow: 1 }}
+                >
+                  <CenteredRowStack spacing={controlSpacing.inner}>
+                    {/* Rotate controls */}
+                    <Tooltip
+                      title="Rotate left"
+                      placement="top"
+                      slotProps={tooltipOffset}
+                    >
+                      <Button
+                        variant="outlined"
+                        onClick={() => rotateActiveShape(false)}
+                        size={buttonSize}
+                      >
+                        <Rotate90DegreesCwIcon className={"rotate-left"} />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip
+                      title="Rotate right"
+                      placement="top"
+                      slotProps={tooltipOffset}
+                    >
+                      <Button
+                        variant="outlined"
+                        onClick={() => rotateActiveShape(true)}
+                        size={buttonSize}
+                      >
+                        <Rotate90DegreesCwIcon />
+                      </Button>
+                    </Tooltip>
+                  </CenteredRowStack>
+                  <CenteredRowStack spacing={controlSpacing.inner}>
+                    {/* Flip controls */}
+                    <Tooltip
+                      title="Flip horizontal"
+                      placement="bottom"
+                      slotProps={tooltipOffset}
+                    >
+                      <Button
+                        variant="outlined"
+                        onClick={() => flipActiveShape(true)}
+                        size={buttonSize}
+                      >
+                        <SwapHorizIcon />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip
+                      title="Flip vertical"
+                      placement="bottom"
+                      slotProps={tooltipOffset}
+                    >
+                      <Button
+                        variant="outlined"
+                        onClick={() => flipActiveShape(false)}
+                        size={buttonSize}
+                      >
+                        <SwapVertIcon />
+                      </Button>
+                    </Tooltip>
+                  </CenteredRowStack>
+                </CenteredColumnStack>
+              </CenteredRowStack>
+            )}
           </CenteredColumnStack>
         )}
         {showSolutionModal && (
@@ -571,6 +910,45 @@ function App() {
             </Typography>
             {renderSolutionTable()}
           </Box>
+        )}
+        {showWinModal && (
+          <Slide direction="up" in={showWinModal} timeout={500}>
+            <Box
+              sx={{
+                bgcolor: "background.paper",
+                boxShadow: 3,
+                p: 4,
+                borderRadius: 2,
+                maxWidth: "600px",
+                mx: "auto",
+                textAlign: "center",
+                mb: 2,
+              }}
+            >
+              <Typography variant="h4" component="h2" gutterBottom>
+                Octamino!
+              </Typography>
+              <Typography variant="h6" sx={{ mb: 3 }}>
+                You solved the puzzle in {formatTime(elapsedTime)}
+              </Typography>
+              <Button
+                color="primary"
+                variant="contained"
+                onClick={restartGame}
+                size={buttonSize}
+                sx={{
+                  boxShadow: "none",
+                  "&:hover": {
+                    boxShadow: "none",
+                  },
+                  px: 4,
+                  py: 1.5,
+                }}
+              >
+                Play again
+              </Button>
+            </Box>
+          </Slide>
         )}
       </div>
     </>

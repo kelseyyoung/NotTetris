@@ -18,10 +18,11 @@ export const HelpModal = ({ onClose }: HelpModalProps) => {
         transform: "translate(-50%, -50%)",
         bgcolor: "background.paper",
         boxShadow: 24,
-        p: 4,
+        p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
         borderRadius: 2,
+        width: "calc(100% - 32px)", // Take up most horizontal space with margins
         maxWidth: "600px",
-        maxHeight: "80vh",
+        maxHeight: "90vh", // Increased from 80vh
         overflow: "auto",
         zIndex: 1000,
       }}

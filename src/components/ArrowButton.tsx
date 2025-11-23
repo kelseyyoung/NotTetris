@@ -1,5 +1,4 @@
 import Button from "@mui/material/Button";
-import Tooltip, { type TooltipProps } from "@mui/material/Tooltip";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -9,72 +8,49 @@ import type { MoveShapeDirection } from "../objects/Grid";
 interface ArrowButtonProps {
   direction: MoveShapeDirection;
   onClick: () => void;
+  size?: "small" | "medium" | "large";
 }
-
-const tooltipOffset = {
-  popper: {
-    modifiers: [
-      {
-        name: "offset",
-        options: {
-          offset: [0, -10],
-        },
-      },
-    ],
-  },
-};
 
 const directionConfig: Record<
   MoveShapeDirection,
   {
     icon: typeof ArrowUpwardIcon;
-    tooltip: string;
-    placement: TooltipProps["placement"];
   }
 > = {
   up: {
     icon: ArrowUpwardIcon,
-    tooltip: "Move up",
-    placement: "top",
   },
   down: {
     icon: ArrowDownwardIcon,
-    tooltip: "Move down",
-    placement: "bottom",
   },
   left: {
     icon: ArrowBackIcon,
-    tooltip: "Move left",
-    placement: "left",
   },
   right: {
     icon: ArrowForwardIcon,
-    tooltip: "Move right",
-    placement: "right",
   },
 };
 
-export const ArrowButton = ({ direction, onClick }: ArrowButtonProps) => {
+export const ArrowButton = ({
+  direction,
+  onClick,
+  size = "small",
+}: ArrowButtonProps) => {
   const config = directionConfig[direction];
   const Icon = config.icon;
 
   return (
-    <Tooltip
-      title={config.tooltip}
-      placement={config.placement}
-      slotProps={tooltipOffset}
+    <Button
+      variant="outlined"
+      size={size}
+      onClick={onClick}
+      sx={{
+        minWidth: "auto",
+        paddingX: size === "large" ? 2 : size === "medium" ? 1.75 : 1.5,
+        paddingY: size === "large" ? 1 : size === "medium" ? 0.75 : 0.5,
+      }}
     >
-      <Button
-        variant="outlined"
-        size="small"
-        onClick={onClick}
-        sx={{
-          minWidth: "auto",
-          padding: 0.5,
-        }}
-      >
-        <Icon color="primary" />
-      </Button>
-    </Tooltip>
+      <Icon />
+    </Button>
   );
 };

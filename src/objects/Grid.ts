@@ -11,10 +11,12 @@ export class Grid {
   private initialShape: Shape | null;
   private allShapes: Shape[];
   private shapesOnGrid: Shape[];
+  private puzzleIndex: number;
   constructor() {
     this.initialShape = null;
     this.allShapes = [];
     this.shapesOnGrid = [];
+    this.puzzleIndex = 0;
   }
 
   private randomizeShape(shape: Shape): void {
@@ -61,7 +63,9 @@ export class Grid {
 
   async startGame(ranking: "easy" | "medium" | "hard") {
     // this.initialShape = Shape.generateRandomShape();
-    this.allShapes = await Shape.generateShapesFromRanking(ranking);
+    const result = await Shape.generateShapesFromRanking(ranking);
+    this.allShapes = result.shapes;
+    this.puzzleIndex = result.puzzleIndex;
     this.initialShape = this.allShapes[0];
     const nextShape = Shape.duplicate(this.initialShape);
     this.randomizeShape(nextShape);
@@ -103,6 +107,10 @@ export class Grid {
 
   getShapes() {
     return this.shapesOnGrid;
+  }
+
+  getPuzzleIndex() {
+    return this.puzzleIndex;
   }
 
   moveActiveShape(direction: MoveShapeDirection) {
@@ -252,7 +260,11 @@ export class Grid {
     this.shapesOnGrid.forEach((shape) => shape.setIsActive(false));
   }
 
-  drawKaleidoscope(canvas: HTMLCanvasElement) {
+  drawKaleidoscope(
+    canvas: HTMLCanvasElement,
+    tileSize: number = TILE_SIZE,
+    gridPadding: number = GRID_PADDING
+  ) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -262,31 +274,32 @@ export class Grid {
     // Fill the grid background with white
     ctx.fillStyle = "white";
     ctx.fillRect(
-      GRID_PADDING,
-      GRID_PADDING,
-      GRID_TILES * TILE_SIZE,
-      GRID_TILES * TILE_SIZE
+      gridPadding,
+      gridPadding,
+      GRID_TILES * tileSize,
+      GRID_TILES * tileSize
     );
 
-    // Draw the grid lines
+    // Draw the grid lines (offset by 0.5 for crisp 1px lines)
+    // Only draw interior lines
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 1;
-    for (let i = 0; i <= GRID_TILES; i++) {
+    for (let i = 1; i < GRID_TILES; i++) {
       // Vertical lines
       ctx.beginPath();
-      ctx.moveTo(GRID_PADDING + i * TILE_SIZE, GRID_PADDING);
+      ctx.moveTo(gridPadding + i * tileSize + 0.5, gridPadding);
       ctx.lineTo(
-        GRID_PADDING + i * TILE_SIZE,
-        GRID_PADDING + GRID_TILES * TILE_SIZE
+        gridPadding + i * tileSize + 0.5,
+        gridPadding + GRID_TILES * tileSize
       );
       ctx.stroke();
 
       // Horizontal lines
       ctx.beginPath();
-      ctx.moveTo(GRID_PADDING, GRID_PADDING + i * TILE_SIZE);
+      ctx.moveTo(gridPadding, gridPadding + i * tileSize + 0.5);
       ctx.lineTo(
-        GRID_PADDING + GRID_TILES * TILE_SIZE,
-        GRID_PADDING + i * TILE_SIZE
+        gridPadding + GRID_TILES * tileSize,
+        gridPadding + i * tileSize + 0.5
       );
       ctx.stroke();
     }
@@ -309,16 +322,30 @@ export class Grid {
     let colorIndex = 0;
     for (let row = 0; row < GRID_TILES; row++) {
       for (let col = 0; col < GRID_TILES; col++) {
-        const x = GRID_PADDING + col * TILE_SIZE;
-        const y = GRID_PADDING + row * TILE_SIZE;
+        const x = gridPadding + col * tileSize;
+        const y = gridPadding + row * tileSize;
         ctx.fillStyle = colorArray[colorIndex];
-        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+        ctx.fillRect(x, y, tileSize, tileSize);
         colorIndex++;
       }
     }
+
+    // Draw outer border around the entire grid (on top of everything)
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(
+      gridPadding + 0.5,
+      gridPadding + 0.5,
+      GRID_TILES * tileSize - 1,
+      GRID_TILES * tileSize - 1
+    );
   }
 
-  draw(canvas: HTMLCanvasElement) {
+  draw(
+    canvas: HTMLCanvasElement,
+    tileSize: number = TILE_SIZE,
+    gridPadding: number = GRID_PADDING
+  ) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -328,46 +355,47 @@ export class Grid {
     // Fill the grid background with white
     ctx.fillStyle = "white";
     ctx.fillRect(
-      GRID_PADDING,
-      GRID_PADDING,
-      GRID_TILES * TILE_SIZE,
-      GRID_TILES * TILE_SIZE
+      gridPadding,
+      gridPadding,
+      GRID_TILES * tileSize,
+      GRID_TILES * tileSize
     );
 
-    // Draw the grid lines
+    // Draw the grid lines (offset by 0.5 for crisp 1px lines)
+    // Only draw interior lines
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 1;
-    for (let i = 0; i <= GRID_TILES; i++) {
+    for (let i = 1; i < GRID_TILES; i++) {
       // Vertical lines
       ctx.beginPath();
-      ctx.moveTo(GRID_PADDING + i * TILE_SIZE, GRID_PADDING);
+      ctx.moveTo(gridPadding + i * tileSize + 0.5, gridPadding);
       ctx.lineTo(
-        GRID_PADDING + i * TILE_SIZE,
-        GRID_PADDING + GRID_TILES * TILE_SIZE
+        gridPadding + i * tileSize + 0.5,
+        gridPadding + GRID_TILES * tileSize
       );
       ctx.stroke();
 
       // Horizontal lines
       ctx.beginPath();
-      ctx.moveTo(GRID_PADDING, GRID_PADDING + i * TILE_SIZE);
+      ctx.moveTo(gridPadding, gridPadding + i * tileSize + 0.5);
       ctx.lineTo(
-        GRID_PADDING + GRID_TILES * TILE_SIZE,
-        GRID_PADDING + i * TILE_SIZE
+        gridPadding + GRID_TILES * tileSize,
+        gridPadding + i * tileSize + 0.5
       );
       ctx.stroke();
     }
 
     for (const shape of this.shapesOnGrid) {
       for (const tile of shape.getTiles()) {
-        const x = GRID_PADDING + tile.getX() * TILE_SIZE;
-        const y = GRID_PADDING + tile.getY() * TILE_SIZE;
+        const x = gridPadding + tile.getX() * tileSize;
+        const y = gridPadding + tile.getY() * tileSize;
         if (shape.getIsActive()) {
           ctx.globalAlpha = 0.7;
         } else {
           ctx.globalAlpha = 1.0;
         }
         ctx.fillStyle = shape.getColor();
-        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+        ctx.fillRect(x, y, tileSize, tileSize);
         ctx.globalAlpha = 1.0;
         if (shape.getIsActive()) {
           // Draw borders for active Shapes
@@ -376,37 +404,47 @@ export class Grid {
           const tileX = tile.getX();
           const tileY = tile.getY();
           ctx.strokeStyle = "#333";
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 3;
           // Left border
           if (!shape.hasTileAt(tileX - 1, tileY)) {
             ctx.beginPath();
             ctx.moveTo(x, y);
-            ctx.lineTo(x, y + TILE_SIZE);
+            ctx.lineTo(x, y + tileSize);
             ctx.stroke();
           }
           // Right border
           if (!shape.hasTileAt(tileX + 1, tileY)) {
             ctx.beginPath();
-            ctx.moveTo(x + TILE_SIZE, y);
-            ctx.lineTo(x + TILE_SIZE, y + TILE_SIZE);
+            ctx.moveTo(x + tileSize, y);
+            ctx.lineTo(x + tileSize, y + tileSize);
             ctx.stroke();
           }
           // Top border
           if (!shape.hasTileAt(tileX, tileY - 1)) {
             ctx.beginPath();
             ctx.moveTo(x, y);
-            ctx.lineTo(x + TILE_SIZE, y);
+            ctx.lineTo(x + tileSize, y);
             ctx.stroke();
           }
           // Bottom border
           if (!shape.hasTileAt(tileX, tileY + 1)) {
             ctx.beginPath();
-            ctx.moveTo(x, y + TILE_SIZE);
-            ctx.lineTo(x + TILE_SIZE, y + TILE_SIZE);
+            ctx.moveTo(x, y + tileSize);
+            ctx.lineTo(x + tileSize, y + tileSize);
             ctx.stroke();
           }
         }
       }
     }
+
+    // Draw outer border around the entire grid (on top of everything)
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(
+      gridPadding + 0.5,
+      gridPadding + 0.5,
+      GRID_TILES * tileSize - 1,
+      GRID_TILES * tileSize - 1
+    );
   }
 }
