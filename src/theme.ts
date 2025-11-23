@@ -33,34 +33,43 @@ export const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"American Typewriter", "Courier New", monospace',
+    fontFamily:
+      '"American Typewriter", "Courier Prime", "Courier New", "Roboto Mono", monospace',
     button: {
       textTransform: "none", // Normal casing for buttons
       fontWeight: 600,
     },
     h1: {
-      fontFamily: '"American Typewriter", "Courier New", monospace',
+      fontFamily:
+        '"American Typewriter", "Courier Prime", "Courier New", "Roboto Mono", monospace',
     },
     h2: {
-      fontFamily: '"American Typewriter", "Courier New", monospace',
+      fontFamily:
+        '"American Typewriter", "Courier Prime", "Courier New", "Roboto Mono", monospace',
     },
     h3: {
-      fontFamily: '"American Typewriter", "Courier New", monospace',
+      fontFamily:
+        '"American Typewriter", "Courier Prime", "Courier New", "Roboto Mono", monospace',
     },
     h4: {
-      fontFamily: '"American Typewriter", "Courier New", monospace',
+      fontFamily:
+        '"American Typewriter", "Courier Prime", "Courier New", "Roboto Mono", monospace',
     },
     h5: {
-      fontFamily: '"American Typewriter", "Courier New", monospace',
+      fontFamily:
+        '"American Typewriter", "Courier Prime", "Courier New", "Roboto Mono", monospace',
     },
     h6: {
-      fontFamily: '"American Typewriter", "Courier New", monospace',
+      fontFamily:
+        '"American Typewriter", "Courier Prime", "Courier New", "Roboto Mono", monospace',
     },
     body1: {
-      fontFamily: '"American Typewriter", "Courier New", monospace',
+      fontFamily:
+        '"American Typewriter", "Courier Prime", "Courier New", "Roboto Mono", monospace',
     },
     body2: {
-      fontFamily: '"American Typewriter", "Courier New", monospace',
+      fontFamily:
+        '"American Typewriter", "Courier Prime", "Courier New", "Roboto Mono", monospace',
     },
   },
   components: {
@@ -107,14 +116,16 @@ export const theme = createTheme({
     MuiMenuItem: {
       styleOverrides: {
         root: {
-          fontFamily: '"American Typewriter", "Courier New", monospace',
+          fontFamily:
+            '"American Typewriter", "Courier Prime", "Courier New", "Roboto Mono", monospace',
         },
       },
     },
     MuiSelect: {
       styleOverrides: {
         root: {
-          fontFamily: '"American Typewriter", "Courier New", monospace',
+          fontFamily:
+            '"American Typewriter", "Courier Prime", "Courier New", "Roboto Mono", monospace',
           backgroundColor: "#ffffff",
         },
       },
@@ -122,14 +133,16 @@ export const theme = createTheme({
     MuiAlert: {
       styleOverrides: {
         root: {
-          fontFamily: '"American Typewriter", "Courier New", monospace',
+          fontFamily:
+            '"American Typewriter", "Courier Prime", "Courier New", "Roboto Mono", monospace',
         },
       },
     },
     MuiTooltip: {
       styleOverrides: {
         tooltip: {
-          fontFamily: '"American Typewriter", "Courier New", monospace',
+          fontFamily:
+            '"American Typewriter", "Courier Prime", "Courier New", "Roboto Mono", monospace',
         },
       },
     },

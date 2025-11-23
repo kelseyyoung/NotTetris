@@ -593,12 +593,12 @@ function App() {
                   variant="body2"
                   sx={{ mb: 0.5, fontWeight: 500, color: "text.primary" }}
                 >
-                  Puzzle #
+                  Puzzle # (1 - 62642)
                 </Typography>
                 <TextField
                   value={puzzleNumber}
                   onChange={(e) => setPuzzleNumber(e.target.value)}
-                  placeholder="1 - 62642"
+                  // placeholder="1 - 62642"
                   size="small"
                   fullWidth
                   disabled={isLoading}
