@@ -593,12 +593,11 @@ function App() {
                   variant="body2"
                   sx={{ mb: 0.5, fontWeight: 500, color: "text.primary" }}
                 >
-                  Puzzle # (1 - 62642)
+                  Puzzle #
                 </Typography>
                 <TextField
                   value={puzzleNumber}
                   onChange={(e) => setPuzzleNumber(e.target.value)}
-                  // placeholder="1 - 62642"
                   size="small"
                   fullWidth
                   disabled={isLoading}
@@ -625,10 +624,7 @@ function App() {
               <Typography
                 sx={{
                   px: 1,
-                  fontFamily: '"American Typewriter", "Courier New", monospace',
-                  fontSize: { xs: "0.9rem", sm: "1rem" },
-                  fontWeight: 500,
-                  color: "text.primary",
+                  variant: "body2",
                   flexShrink: 0,
                   mt: 3,
                 }}
@@ -685,6 +681,22 @@ function App() {
                   "Start"
                 )}
               </Button>
+              {puzzleNumber !== "" &&
+                (isNaN(Number(puzzleNumber)) ||
+                  Number(puzzleNumber) < 1 ||
+                  Number(puzzleNumber) > 62642) && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "error.main",
+                      mt: 0.5,
+                      display: "block",
+                      textAlign: "center",
+                    }}
+                  >
+                    Puzzle # must be between 1 and 62642
+                  </Typography>
+                )}
             </Box>
           </CenteredColumnStack>
         )}
@@ -692,28 +704,24 @@ function App() {
           <CenteredColumnStack>
             {/* Puzzle number and timer row */}
             <CenteredRowStack spacing={2} width="100%" sx={{ mb: 0.5 }}>
-              <Box
+              <Typography
                 sx={{
                   flex: 1,
                   textAlign: "left",
-                  fontFamily: '"American Typewriter", "Courier New", monospace',
-                  fontSize: { xs: "0.95rem", sm: "1.05rem" },
-                  fontWeight: 600,
+                  variant: "body2",
                 }}
               >
                 Puzzle #{grid.current.getPuzzleIndex()}
-              </Box>
-              <Box
+              </Typography>
+              <Typography
                 sx={{
                   flex: 1,
                   textAlign: "right",
-                  fontFamily: '"American Typewriter", "Courier New", monospace',
-                  fontSize: { xs: "0.95rem", sm: "1.05rem" },
-                  fontWeight: 600,
+                  variant: "body2",
                 }}
               >
                 {formatTime(elapsedTime)}
-              </Box>
+              </Typography>
             </CenteredRowStack>
             <CenteredRowStack>
               <Button

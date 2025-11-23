@@ -4,6 +4,7 @@ body {
   font-family: "American Typewriter", "Courier Prime", "Courier New",
     "Roboto Mono", monospace;
   overflow: hidden; /* Prevent scrolling */
+  overscroll-behavior-y: auto; /* Allow pull-to-refresh on mobile */
 }
 
 #root {
