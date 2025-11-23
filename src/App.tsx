@@ -600,6 +600,8 @@ function App() {
                   onChange={(e) => setPuzzleNumber(e.target.value)}
                   size="small"
                   fullWidth
+                  type="number"
+                  autoComplete="off"
                   disabled={isLoading}
                   error={
                     puzzleNumber !== "" &&
@@ -610,6 +612,17 @@ function App() {
                   sx={{
                     "& .MuiInputBase-input::placeholder": {
                       opacity: 0.6,
+                    },
+                    "& input[type=number]::-webkit-outer-spin-button": {
+                      WebkitAppearance: "none",
+                      margin: 0,
+                    },
+                    "& input[type=number]::-webkit-inner-spin-button": {
+                      WebkitAppearance: "none",
+                      margin: 0,
+                    },
+                    "& input[type=number]": {
+                      MozAppearance: "textfield",
                     },
                   }}
                   slotProps={{
