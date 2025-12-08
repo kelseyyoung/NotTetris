@@ -136,7 +136,11 @@ function App() {
 
   return (
     <>
-      <Header onAutoComplete={gameActions.autoComplete} gameStarted={gameStarted} />
+      <Header 
+        onAutoComplete={gameActions.autoComplete} 
+        onRestart={restartGame}
+        gameStarted={gameStarted} 
+      />
       
       <Box sx={{ position: "relative", display: "inline-block" }}>
         <canvas id="canvas-grid"></canvas>

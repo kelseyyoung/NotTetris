@@ -4,9 +4,7 @@ import { Tile } from "./Tile";
 let rankings: string = "";
 async function loadRankings(): Promise<void> {
   if (!rankings) {
-    const response = await fetch(
-      `${import.meta.env.BASE_URL}RankingWithEntireSquare.txt`
-    );
+    const response = await fetch(`${import.meta.env.BASE_URL}NewRanking.txt`);
     rankings = await response.text();
   }
 }
@@ -86,11 +84,11 @@ export class Shape {
         const parts = line.trim().split(" ");
         const score = parseInt(parts[parts.length - 1]);
         if (ranking === "easy") {
-          return score >= 12;
+          return score >= 13;
         } else if (ranking === "medium") {
-          return score >= 6 && score < 12;
+          return score >= 7 && score < 13;
         } else if (ranking === "hard") {
-          return score < 6;
+          return score < 7;
         }
       });
 
