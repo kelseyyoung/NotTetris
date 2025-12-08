@@ -5,11 +5,11 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import type { MoveShapeDirection } from "../objects/Grid";
 
-interface ArrowButtonProps {
+type ArrowButtonProps = {
   direction: MoveShapeDirection;
   onClick: () => void;
   size?: "small" | "medium" | "large";
-}
+};
 
 const directionConfig: Record<
   MoveShapeDirection,

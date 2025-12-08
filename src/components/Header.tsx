@@ -6,10 +6,10 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import Backdrop from "@mui/material/Backdrop";
 import { HelpModal } from "./HelpModal";
 
-interface HeaderProps {
+type HeaderProps = {
   onAutoComplete: () => void;
   gameStarted: boolean;
-}
+};
 
 export const Header = ({ onAutoComplete, gameStarted }: HeaderProps) => {
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);

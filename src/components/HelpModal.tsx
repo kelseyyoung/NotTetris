@@ -4,9 +4,9 @@ import CloseIcon from "@mui/icons-material/Close";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 
-interface HelpModalProps {
+type HelpModalProps = {
   onClose: () => void;
-}
+};
 
 export const HelpModal = ({ onClose }: HelpModalProps) => {
   return (
