@@ -56,6 +56,10 @@ export function useKeyboardControls({
     const keyDownHandler = (event: KeyboardEvent) => {
       if (!gameStarted || hasWon) return;
 
+      // Ignore if any modifier keys are pressed
+      if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey)
+        return;
+
       // Only handle game control keys
       const gameKeys = [
         "r",

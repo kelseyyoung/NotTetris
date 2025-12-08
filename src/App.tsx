@@ -195,6 +195,7 @@ function App() {
           <WinModal
             show={showWinModal}
             elapsedTime={elapsedTime}
+            puzzleIndex={grid.current.getPuzzleIndex()}
             buttonSize={buttonSize}
             onPlayAgain={restartGame}
           />

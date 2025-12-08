@@ -15,6 +15,7 @@ import type { Shape } from "../objects/Shape";
 export type WinModalProps = {
   show: boolean;
   elapsedTime: number;
+  puzzleIndex: number;
   buttonSize: "small" | "medium" | "large";
   onPlayAgain: () => void;
 };
@@ -22,6 +23,7 @@ export type WinModalProps = {
 export function WinModal({
   show,
   elapsedTime,
+  puzzleIndex,
   buttonSize,
   onPlayAgain,
 }: WinModalProps) {
@@ -43,7 +45,7 @@ export function WinModal({
           Octamino!
         </Typography>
         <Typography variant="h6" sx={{ mb: 3 }}>
-          You solved the puzzle in {formatTime(elapsedTime)}
+          You solved puzzle #{puzzleIndex} in {formatTime(elapsedTime)}
         </Typography>
         <Button
           color="primary"
